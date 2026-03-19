@@ -1,0 +1,13 @@
+{
+  "name": "ananke-godot-sidecar",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Ananke physics sidecar for Godot 4",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@its-not-rocket-science/ananke": "^0.1.1"
+  }
+}

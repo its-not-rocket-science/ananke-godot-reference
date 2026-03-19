@@ -1,0 +1,26 @@
+# ── Godot ─────────────────────────────────────────────────────────────────────
+.godot/
+*.translation
+export_presets.cfg
+
+# Godot-specific lock file (automatically created by Godot 4 on project open)
+.godot_lockfile
+
+# ── Node.js sidecar ───────────────────────────────────────────────────────────
+sidecar/node_modules/
+sidecar/.env
+
+# ── OS artifacts ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor artifacts ──────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Build / dist ──────────────────────────────────────────────────────────────
+dist/
+build/
