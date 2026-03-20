@@ -8,9 +8,13 @@ config_version=5
 
 config/name="AnankeGodotReference"
 config/description="Godot 4 reference renderer for the Ananke physics simulation engine."
-run/main_scene="res://scenes/demo.tscn"
-config/features=PackedStringArray("4.2", "Forward Plus")
+run/main_scene="res://scenes/Demo.tscn"
+config/features=PackedStringArray("4.2", "C#", "Forward Plus")
 config/icon="res://icon.svg"
+
+[dotnet]
+
+project/assembly_name="AnankeGodotReference"
 
 [rendering]
 
