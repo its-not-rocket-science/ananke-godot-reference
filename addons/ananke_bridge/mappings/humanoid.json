@@ -1,0 +1,11 @@
+{
+  "bodyPlanId": "humanoid",
+  "segments": [
+    { "segmentId": "head", "boneName": "head" },
+    { "segmentId": "torso", "boneName": "torso" },
+    { "segmentId": "leftArm", "boneName": "left_arm" },
+    { "segmentId": "rightArm", "boneName": "right_arm" },
+    { "segmentId": "leftLeg", "boneName": "left_leg" },
+    { "segmentId": "rightLeg", "boneName": "right_leg" }
+  ]
+}

@@ -1,0 +1,32 @@
+[gd_scene load_steps=6 format=3 uid="uid://demo_scene_ananke_bridge"]
+
+[ext_resource type="Script" path="res://addons/ananke_bridge/AnankeDemo.cs" id="1_demo"]
+[ext_resource type="Script" path="res://addons/ananke_bridge/AnankeReceiver.cs" id="2_receiver"]
+[ext_resource type="Script" path="res://addons/ananke_bridge/AnankeInterpolator.cs" id="3_interpolator"]
+[ext_resource type="PackedScene" path="res://scenes/CharacterRig.tscn" id="4_character_rig"]
+
+[node name="AnankeDemo" type="Node3D"]
+script = ExtResource("1_demo")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 6, 0)
+light_energy = 1.1
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.906308, 0.422618, 0, -0.422618, 0.906308, 0, 2.4, 5.6)
+current = true
+
+[node name="AnankeReceiver" type="Node" parent="."]
+script = ExtResource("2_receiver")
+
+[node name="AnankeInterpolator" type="Node" parent="."]
+script = ExtResource("3_interpolator")
+
+[node name="Knight" parent="." instance=ExtResource("4_character_rig")]
+EntityId = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0, 0)
+
+[node name="Brawler" parent="." instance=ExtResource("4_character_rig")]
+EntityId = 2
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0, 0)
