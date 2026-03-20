@@ -1,12 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://demo_scene_ananke"]
+[gd_scene load_steps=5 format=3 uid="uid://demo_scene_ananke"]
 
 [ext_resource type="Script" path="res://scripts/AnankeController.gd" id="1_controller"]
+[ext_resource type="PackedScene" path="res://scenes/CharacterRig.tscn" id="2_character_rig"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_knight"]
-size = Vector3(0.4, 1.8, 0.3)
-
-[sub_resource type="BoxMesh" id="BoxMesh_brawler"]
-size = Vector3(0.4, 1.8, 0.3)
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+size = Vector2(6, 6)
 
 [node name="AnankeDemo" type="Node3D"]
 script = ExtResource("1_controller")
@@ -17,18 +15,52 @@ light_energy = 1.2
 shadow_enabled = true
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 2, 3)
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 2.4, 4.4)
 current = true
 
-[node name="Entity1" type="MeshInstance3D" parent="."]
-; Placeholder mesh for entity id=1 (team 1 — Knight).
-; TODO (M2): Replace with a fully rigged Skeleton3D + GLTF humanoid mesh.
-; TODO (M3): Attach AnimationPlayer and AnimationTree for AnimationHints.
-mesh = SubResource("BoxMesh_knight")
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+[node name="Entity1" parent="." instance=ExtResource("2_character_rig")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.4, 0, 0)
+body_color = Color(0.33, 0.56, 0.95, 1)
+metadata/entity_id = 1
 
-[node name="Entity2" type="MeshInstance3D" parent="."]
-; Placeholder mesh for entity id=2 (team 2 — Knight).
-; TODO (M2): Replace with a fully rigged Skeleton3D + GLTF humanoid mesh.
-mesh = SubResource("BoxMesh_brawler")
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0.9, 0)
+[node name="Entity2" parent="." instance=ExtResource("2_character_rig")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0, 0)
+body_color = Color(0.92, 0.46, 0.27, 1)
+metadata/entity_id = 2
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_ground")
+transform = Transform3D(4, 0, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0)
+
+[node name="WaitingOverlay" type="CanvasLayer" parent="."]
+visible = true
+
+[node name="PanelContainer" type="PanelContainer" parent="WaitingOverlay"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -80.0
+offset_right = 220.0
+offset_bottom = 80.0
+
+[node name="MarginContainer" type="MarginContainer" parent="WaitingOverlay/PanelContainer"]
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="WaitingOverlay/PanelContainer/MarginContainer"]
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="StatusLabel" type="Label" parent="WaitingOverlay/PanelContainer/MarginContainer/VBoxContainer"]
+text = "Waiting for sidecar"
+horizontal_alignment = 1
+
+[node name="HintLabel" type="Label" parent="WaitingOverlay/PanelContainer/MarginContainer/VBoxContainer"]
+text = "Start the Node.js sidecar to stream frames into Godot."
+autowrap_mode = 3
+horizontal_alignment = 1

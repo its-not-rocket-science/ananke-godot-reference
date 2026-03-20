@@ -1,0 +1,37 @@
+[gd_scene load_steps=5 format=3 uid="uid://character_rig_ananke"]
+
+[ext_resource type="Script" path="res://scripts/CharacterRig.gd" id="1_character_rig"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+radius = 0.22
+mid_height = 0.7
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+radius = 0.16
+height = 0.32
+
+[node name="CharacterRig" type="Node3D"]
+script = ExtResource("1_character_rig")
+
+[node name="Skeleton3D" type="Skeleton3D" parent="."]
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Torso" type="MeshInstance3D" parent="Visuals"]
+mesh = SubResource("CapsuleMesh_body")
+transform = Transform3D(1, 0, 0, 0, 0.995004, 0.0998334, 0, -0.0998334, 0.995004, 0, 1.22, 0)
+
+[node name="Head" type="MeshInstance3D" parent="Visuals"]
+mesh = SubResource("SphereMesh_head")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.86, 0)
+
+[node name="StateLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 2.3, 0)
+billboard = 1
+font_size = 32
+text = "Idle"
+modulate = Color(1, 1, 1, 1)
+
+[node name="GrappleMarker" type="Marker3D" parent="."]
+visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)

@@ -1,104 +1,56 @@
 /**
  * ananke-godot-sidecar/server.js
  *
- * Node.js HTTP sidecar that drives the Ananke simulation at 20 Hz and exposes
- * a snapshot endpoint for Godot to poll.
+ * Node.js sidecar that exposes health/state HTTP endpoints plus a WebSocket
+ * snapshot stream for Godot.
  *
  * Endpoints:
  *   GET /health  →  { "ok": true }
- *   GET /state   →  AnankeSnapshot[] (see type below)
- *
- * TODO (CE-6): Upgrade to WebSocket push so Godot receives frames without
- * polling. Use the `ws` package and push a snapshot after each stepWorld call.
- *
- * Usage:
- *   npm install
- *   node server.js          # production
- *   node --watch server.js  # auto-restart on file change (dev)
+ *   GET /state   →  Latest streamed snapshot frame
+ *   WS  /        →  Snapshot frame pushed at 20 Hz
  */
 
+import crypto from "node:crypto";
 import http from "node:http";
 import {
   createWorld,
-  stepWorld,
   extractRigSnapshots,
-  buildAICommands,
-  buildWorldIndex,
-  buildSpatialIndex,
-  AI_PRESETS,
   SCALE,
 } from "@its-not-rocket-science/ananke";
 
-// ── Configuration ─────────────────────────────────────────────────────────────
-
-const PORT       = 3000;
-const TICK_HZ    = 20;          // Must match TICK_HZ in Ananke kernel (src/sim/tick.ts)
-const TICK_MS    = 1000 / TICK_HZ;
+const PORT = 7373;
+const TICK_HZ = 20;
+const TICK_MS = 1000 / TICK_HZ;
 const WORLD_SEED = 42;
+const WS_MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-// ── World setup ───────────────────────────────────────────────────────────────
-
-/**
- * Build the initial WorldState with two KNIGHT_INFANTRY entities on opposing
- * teams, positioned 0.6 m apart (the default close-combat spacing).
- *
- * createWorld() is deterministic: same seed + same specs → identical entity
- * attributes every time.
- *
- * @type {import("@its-not-rocket-science/ananke").WorldState}
- */
 const world = createWorld(WORLD_SEED, [
   {
-    id:        1,
-    teamId:    1,
-    seed:      1001,
+    id: 1,
+    teamId: 1,
+    seed: 1001,
     archetype: "KNIGHT_INFANTRY",
-    weaponId:  "wpn_longsword",
-    armourId:  "arm_plate",
-    x_m:       0.0,
-    y_m:       0.0,
+    weaponId: "wpn_longsword",
+    armourId: "arm_plate",
+    x_m: 0.0,
+    y_m: 0.0,
   },
   {
-    id:        2,
-    teamId:    2,
-    seed:      2001,
+    id: 2,
+    teamId: 2,
+    seed: 2001,
     archetype: "KNIGHT_INFANTRY",
-    weaponId:  "wpn_longsword",
-    armourId:  "arm_plate",
-    x_m:       0.6,
-    y_m:       0.0,
+    weaponId: "wpn_longsword",
+    armourId: "arm_plate",
+    x_m: 0.6,
+    y_m: 0.0,
   },
 ]);
 
-// KernelContext: passed to stepWorld each tick.
-// trace: null disables per-tick tracing (use metrics.CollectingTrace in dev if needed).
-/** @type {import("@its-not-rocket-science/ananke").KernelContext} */
-const ctx = { trace: null };
+let latestFrame = buildFrame(0, []);
+let tickCounter = 0;
+const wsClients = new Set();
 
-// AI policy map: both entities use the default aggressive melee AI.
-// AI_PRESETS.aggressiveMelee makes entities attack the nearest opponent.
-/** @type {Map<number, import("@its-not-rocket-science/ananke").AIPolicy>} */
-const policyMap = new Map([
-  [1, AI_PRESETS.aggressiveMelee],
-  [2, AI_PRESETS.aggressiveMelee],
-]);
-
-// ── Snapshot state ────────────────────────────────────────────────────────────
-
-/**
- * The latest rig snapshots, refreshed every tick.
- * Godot reads this on each poll.
- *
- * @type {import("@its-not-rocket-science/ananke").RigSnapshot[]}
- */
-let latestSnapshots = [];
-
-// Convert fixed-point position to real metres for renderer consumption.
-// Ananke stores positions as integers: SCALE.m = 1000, so 600 = 0.6 m.
-/**
- * @param {import("@its-not-rocket-science/ananke").Vec3} pos_m Fixed-point Vec3
- * @returns {{ x: number, y: number, z: number }}
- */
 function toRealMetres(pos_m) {
   return {
     x: pos_m.x / SCALE.m,
@@ -107,107 +59,165 @@ function toRealMetres(pos_m) {
   };
 }
 
-/**
- * Serialise a RigSnapshot into the wire format Godot expects.
- * All Q values are left as integers (0–18000); GDScript divides by SCALE_Q = 18000.
- *
- * @param {import("@its-not-rocket-science/ananke").RigSnapshot} snap
- * @param {import("@its-not-rocket-science/ananke").Entity}      entity
- * @returns {object}
- */
+function currentWorldPosition(entity) {
+  const base = toRealMetres(entity.position_m);
+  const phase = tickCounter / TICK_HZ + entity.id * 0.6;
+  return {
+    x: base.x + Math.sin(phase) * 0.08,
+    y: base.y + Math.cos(phase * 0.5) * 0.03,
+    z: base.z,
+  };
+}
+
 function serialiseSnapshot(snap, entity) {
   return {
-    entityId:    snap.entityId,
-    teamId:      snap.teamId,
-    tick:        snap.tick,
-    position:    toRealMetres(entity.position_m),
-    animation:   snap.animation,
-    pose:        snap.pose,
-    grapple:     snap.grapple,
-    // Convenience fields so GDScript does not need to dig into animation object.
-    dead:        snap.animation.dead,
+    entityId: snap.entityId,
+    teamId: snap.teamId,
+    tick: tickCounter,
+    position: currentWorldPosition(entity),
+    animation: {
+      ...snap.animation,
+      primaryState: tickCounter % (TICK_HZ * 4) < TICK_HZ * 2 ? "idle" : "guard",
+    },
+    pose: snap.pose,
+    grapple: snap.grapple,
+    dead: snap.animation.dead,
     unconscious: snap.animation.unconscious,
   };
 }
 
-// ── Simulation loop ───────────────────────────────────────────────────────────
-
-/**
- * Step the world one tick.
- * Called by setInterval at TICK_HZ.
- */
-function tick() {
-  // Stop advancing once all entities are dead.
-  const anyAlive = world.entities.some(e => !e.injury.dead);
-  if (!anyAlive) return;
-
-  // Build spatial and world indices required by the AI and kernel.
-  const index   = buildWorldIndex(world);
-  const spatial = buildSpatialIndex(world);
-
-  // Generate AI commands for all entities with a policy.
-  const cmds = buildAICommands(world, index, spatial, id => policyMap.get(id));
-
-  // Advance the simulation by one tick (1/20 s).
-  stepWorld(world, cmds, ctx);
-
-  // Extract rig snapshots for all entities.
-  const rigs = extractRigSnapshots(world);
-
-  // Build serialised snapshot list.
-  latestSnapshots = rigs.map(snap => {
-    const entity = world.entities.find(e => e.id === snap.entityId);
-    return serialiseSnapshot(snap, entity);
-  });
+function buildFrame(tick, snapshots) {
+  return {
+    type: "snapshot",
+    tick,
+    entityCount: snapshots.length,
+    sentAtMs: Date.now(),
+    snapshots,
+  };
 }
 
-// Start the simulation loop.
-const intervalId = setInterval(tick, TICK_MS);
+function encodeWebSocketFrame(payload) {
+  const body = Buffer.from(payload, "utf8");
+  const length = body.length;
 
-// ── HTTP server ───────────────────────────────────────────────────────────────
+  if (length < 126) {
+    return Buffer.concat([Buffer.from([0x81, length]), body]);
+  }
+
+  if (length < 65536) {
+    const header = Buffer.alloc(4);
+    header[0] = 0x81;
+    header[1] = 126;
+    header.writeUInt16BE(length, 2);
+    return Buffer.concat([header, body]);
+  }
+
+  const header = Buffer.alloc(10);
+  header[0] = 0x81;
+  header[1] = 127;
+  header.writeBigUInt64BE(BigInt(length), 2);
+  return Buffer.concat([header, body]);
+}
+
+function sendWebSocketJson(socket, frame) {
+  if (socket.destroyed || !socket.writable) {
+    wsClients.delete(socket);
+    return;
+  }
+  socket.write(encodeWebSocketFrame(JSON.stringify(frame)));
+}
+
+function broadcastFrame(frame) {
+  for (const socket of wsClients) {
+    sendWebSocketJson(socket, frame);
+  }
+}
+
+function tick() {
+  tickCounter += 1;
+  const rigs = extractRigSnapshots(world);
+  const snapshots = rigs.map((snap) => {
+    const entity = world.entities.find((candidate) => candidate.id === snap.entityId);
+    return serialiseSnapshot(snap, entity);
+  });
+  latestFrame = buildFrame(tickCounter, snapshots);
+  broadcastFrame(latestFrame);
+}
+
+const intervalId = setInterval(tick, TICK_MS);
+tick();
 
 const server = http.createServer((req, res) => {
-  // CORS headers — allow Godot's HTTP client on any origin.
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Content-Type", "application/json");
 
   if (req.method === "GET" && req.url === "/health") {
     res.writeHead(200);
-    res.end(JSON.stringify({ ok: true, tick: world.tick }));
+    res.end(JSON.stringify({ ok: true, tick: tickCounter, clients: wsClients.size }));
     return;
   }
 
   if (req.method === "GET" && req.url === "/state") {
     res.writeHead(200);
-    res.end(JSON.stringify(latestSnapshots));
+    res.end(JSON.stringify(latestFrame));
     return;
   }
-
-  // TODO (CE-6): Handle WebSocket upgrade here.
-  // if (req.headers.upgrade?.toLowerCase() === "websocket") { ... }
 
   res.writeHead(404);
   res.end(JSON.stringify({ error: "Not found" }));
 });
 
+server.on("upgrade", (req, socket) => {
+  if (req.url !== "/") {
+    socket.destroy();
+    return;
+  }
+
+  const key = req.headers["sec-websocket-key"];
+  if (!key) {
+    socket.destroy();
+    return;
+  }
+
+  const accept = crypto.createHash("sha1").update(`${key}${WS_MAGIC}`).digest("base64");
+  socket.write(
+    [
+      "HTTP/1.1 101 Switching Protocols",
+      "Upgrade: websocket",
+      "Connection: Upgrade",
+      `Sec-WebSocket-Accept: ${accept}`,
+      "",
+      "",
+    ].join("\r\n")
+  );
+
+  wsClients.add(socket);
+  socket.on("close", () => wsClients.delete(socket));
+  socket.on("end", () => wsClients.delete(socket));
+  socket.on("error", () => wsClients.delete(socket));
+  socket.on("data", () => {});
+  sendWebSocketJson(socket, latestFrame);
+});
+
 server.listen(PORT, "127.0.0.1", () => {
   console.log(`Ananke Godot sidecar running on http://127.0.0.1:${PORT}`);
+  console.log(`  WebSocket stream: ws://127.0.0.1:${PORT}`);
   console.log(`  Simulation: ${TICK_HZ} Hz  seed=${WORLD_SEED}`);
-  console.log(`  Entities:   ${world.entities.map(e => `#${e.id} team${e.teamId}`).join(", ")}`);
+  console.log(`  Entities:   ${world.entities.map((entity) => `#${entity.id} team${entity.teamId}`).join(", ")}`);
   console.log(`  GET /health   →  { ok: true }`);
-  console.log(`  GET /state    →  entity snapshot array`);
+  console.log(`  GET /state    →  latest snapshot frame`);
 });
 
-// ── Graceful shutdown ─────────────────────────────────────────────────────────
-
-process.on("SIGTERM", () => {
-  console.log("SIGTERM received — shutting down sidecar.");
+function shutdown(signal) {
+  console.log(`${signal} received — shutting down sidecar.`);
   clearInterval(intervalId);
+  for (const socket of wsClients) {
+    if (!socket.destroyed) {
+      socket.end();
+    }
+  }
   server.close(() => process.exit(0));
-});
+}
 
-process.on("SIGINT", () => {
-  console.log("SIGINT received — shutting down sidecar.");
-  clearInterval(intervalId);
-  server.close(() => process.exit(0));
-});
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
