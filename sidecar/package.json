@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@its-not-rocket-science/ananke": "^0.1.4"
+    "@its-not-rocket-science/ananke": "^0.1.3"
   },
   "devDependencies": {
     "typescript": "^5.5.4",
