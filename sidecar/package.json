@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "typecheck": "tsc --noEmit"
+    "check": "node --check server.js"
   },
   "dependencies": {
     "@its-not-rocket-science/ananke": "^0.1.4"
