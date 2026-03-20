@@ -1,0 +1,24 @@
+[gd_scene load_steps=8 format=3 uid="uid://character_rig_scene"]
+
+[ext_resource type="Script" path="res://addons/ananke_bridge/AnankeCharacterRig.cs" id="1_rig"]
+[ext_resource type="Script" path="res://addons/ananke_bridge/SkeletonMapper.cs" id="2_mapper"]
+[ext_resource type="Script" path="res://addons/ananke_bridge/AnimationDriver.cs" id="3_anim"]
+[ext_resource type="Script" path="res://addons/ananke_bridge/GrappleApplicator.cs" id="4_grapple"]
+[ext_resource type="PackedScene" path="res://assets/characters/PlaceholderHumanoid.tscn" id="5_humanoid"]
+
+[node name="CharacterRig" type="Node3D"]
+script = ExtResource("1_rig")
+
+[node name="Visual" parent="." instance=ExtResource("5_humanoid")]
+
+[node name="SkeletonMapper" type="Node" parent="."]
+script = ExtResource("2_mapper")
+
+[node name="AnimationDriver" type="Node" parent="."]
+script = ExtResource("3_anim")
+
+[node name="GrappleApplicator" type="Node" parent="."]
+script = ExtResource("4_grapple")
+
+[node name="HeldAnchor" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0.2)

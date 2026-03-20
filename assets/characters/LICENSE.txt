@@ -1,0 +1,5 @@
+PlaceholderHumanoid.tscn and its embedded primitive meshes were authored for this repository
+and are dedicated to the public domain under CC0 1.0.
+
+You may copy, modify, distribute, and use the asset, even for commercial purposes,
+without asking permission.

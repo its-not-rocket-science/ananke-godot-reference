@@ -1,0 +1,59 @@
+[gd_scene load_steps=10 format=3 uid="uid://placeholder_humanoid"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_torso"]
+size = Vector3(0.45, 0.7, 0.22)
+
+[sub_resource type="BoxMesh" id="BoxMesh_head"]
+size = Vector3(0.24, 0.24, 0.24)
+
+[sub_resource type="BoxMesh" id="BoxMesh_arm"]
+size = Vector3(0.14, 0.5, 0.14)
+
+[sub_resource type="BoxMesh" id="BoxMesh_leg"]
+size = Vector3(0.16, 0.7, 0.16)
+
+[node name="PlaceholderHumanoid" type="Node3D"]
+
+[node name="Skeleton3D" type="Skeleton3D" parent="."]
+bones/0/name = &"torso"
+bones/0/parent = -1
+bones/0/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+bones/1/name = &"head"
+bones/1/parent = 0
+bones/1/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+bones/2/name = &"left_arm"
+bones/2/parent = 0
+bones/2/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.34, 0.15, 0)
+bones/3/name = &"right_arm"
+bones/3/parent = 0
+bones/3/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.34, 0.15, 0)
+bones/4/name = &"left_leg"
+bones/4/parent = 0
+bones/4/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.14, -0.62, 0)
+bones/5/name = &"right_leg"
+bones/5/parent = 0
+bones/5/rest = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.14, -0.62, 0)
+
+[node name="Torso" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_torso")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+
+[node name="Head" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_head")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.65, 0)
+
+[node name="LeftArm" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_arm")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.34, 1.1, 0)
+
+[node name="RightArm" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_arm")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.34, 1.1, 0)
+
+[node name="LeftLeg" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_leg")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.14, 0.35, 0)
+
+[node name="RightLeg" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_leg")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.14, 0.35, 0)

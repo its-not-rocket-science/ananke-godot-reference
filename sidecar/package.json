@@ -1,18 +1,20 @@
 {
   "name": "ananke-godot-sidecar",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Ananke physics sidecar for Godot 4",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
-    "check": "node --check server.js"
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/main.js",
+    "dev": "npm run build && node --watch dist/src/main.js",
+    "test": "npm run build && node --test dist/test/smoke.test.js",
+    "check": "npm run build"
   },
   "dependencies": {
     "@its-not-rocket-science/ananke": "^0.1.4"
   },
   "devDependencies": {
-    "typescript": "^5.5.4",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.4"
   }
 }
