@@ -1,12 +1,14 @@
 ## AnankeDoc: Maintains the WebSocket link to the Ananke sidecar, parses
-## pushed JSON frames, and exposes connection lifecycle signals to the demo.
+## bridge frames, and exposes connection lifecycle signals to the demo.
 extends RefCounted
 class_name AnankeReceiver
 
+signal frame_received(frame: Dictionary, metadata: Dictionary)
 signal snapshots_received(snapshots: Array, metadata: Dictionary)
 signal connection_status_changed(status: String, details: String)
 
-const DEFAULT_URL := "ws://127.0.0.1:7373"
+const DEFAULT_URL := "ws://127.0.0.1:7373/ws"
+const FRAME_SCHEMA := "ananke.bridge.frame.v1"
 
 var _socket := WebSocketPeer.new()
 var _url := DEFAULT_URL
@@ -85,20 +87,25 @@ func _parse_message(payload: String) -> void:
 		return
 
 	var frame: Dictionary = json.data
-	if frame.get("type", "") != "snapshot":
+	if String(frame.get("schema", "")) != FRAME_SCHEMA:
+		_emit_status("error", "Unsupported frame schema: %s" % String(frame.get("schema", "<missing>")))
 		return
 
-	var snapshots: Variant = frame.get("snapshots", [])
-	if typeof(snapshots) != TYPE_ARRAY:
-		_emit_status("error", "Snapshot payload missing array")
+	var entities_variant: Variant = frame.get("entities", [])
+	if typeof(entities_variant) != TYPE_ARRAY:
+		_emit_status("error", "Frame payload missing entities array")
 		return
 
+	var entities: Array = entities_variant
 	var metadata := {
+		"schema": String(frame.get("schema", FRAME_SCHEMA)),
+		"scenario_id": String(frame.get("scenarioId", "")),
 		"tick": int(frame.get("tick", 0)),
-		"sent_at_ms": float(frame.get("sentAtMs", 0.0)),
-		"entity_count": int(frame.get("entityCount", 0)),
+		"timestamp_ms": float(frame.get("timestampMs", 0.0)),
+		"entity_count": entities.size(),
 	}
-	snapshots_received.emit(snapshots, metadata)
+	frame_received.emit(frame, metadata)
+	snapshots_received.emit(entities, metadata)
 
 func _emit_status(status: String, details: String) -> void:
 	if status == _last_status and details == _last_details:
