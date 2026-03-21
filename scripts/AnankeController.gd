@@ -2,8 +2,9 @@
 ## character rigs, and updates the waiting overlay for connection failures.
 extends Node3D
 
-const SIDECAR_URL := "ws://127.0.0.1:7373"
+const SIDECAR_URL := "ws://127.0.0.1:7373/ws"
 const RECONNECT_INTERVAL_S := 2.0
+const FALLBACK_MAPPING_PATH := "res://addons/ananke_bridge/mappings/humanoid.json"
 
 var _receiver := AnankeReceiver.new()
 var _mapper := SkeletonMapper.new()
@@ -18,6 +19,7 @@ var _reconnect_timer := 0.0
 
 func _ready() -> void:
 	_register_entities()
+	_mapper.load_mapping_from_json(FALLBACK_MAPPING_PATH)
 	_receiver.snapshots_received.connect(_on_snapshots_received)
 	_receiver.connection_status_changed.connect(_on_connection_status_changed)
 	_set_overlay_state(true, "Waiting for sidecar", "Start the sidecar to stream frames into Godot.")
@@ -36,7 +38,7 @@ func _exit_tree() -> void:
 
 func _register_entities() -> void:
 	for child in get_children():
-		if child is CharacterRig:
+		if child is Node3D and child.has_method("get_skeleton"):
 			var entity_id := int(child.get_meta("entity_id", child.name.trim_prefix("Entity")))
 			if entity_id > 0:
 				_entity_nodes[entity_id] = child
@@ -63,18 +65,21 @@ func _on_connection_status_changed(status: String, details: String) -> void:
 func _on_snapshots_received(snapshots: Array, metadata: Dictionary) -> void:
 	_set_overlay_state(false, "Streaming", "Receiving tick %d for %d entities." % [int(metadata.get("tick", 0)), int(metadata.get("entity_count", snapshots.size()))])
 	for entity_id in _entity_nodes.keys():
-		var rig: CharacterRig = _entity_nodes[entity_id]
-		_mapper.reset_pose(rig.skeleton)
-		rig.set_grapple_state(false, -1, "", 0.0)
+		var rig: Node = _entity_nodes[entity_id]
+		var skeleton: Skeleton3D = rig.call("get_skeleton")
+		_mapper.reset_pose(skeleton)
+		if rig.has_method("set_grapple_state"):
+			rig.call("set_grapple_state", false, -1, "", 0.0)
 
 	for snapshot in snapshots:
 		if typeof(snapshot) != TYPE_DICTIONARY:
 			continue
 		var entity_id := int(snapshot.get("entityId", -1))
-		var rig: CharacterRig = _entity_nodes.get(entity_id)
+		var rig: Node3D = _entity_nodes.get(entity_id)
 		if rig == null:
 			continue
-		_mapper.apply_snapshot(rig, rig.skeleton, snapshot)
+		var skeleton: Skeleton3D = rig.call("get_skeleton")
+		_mapper.apply_snapshot(rig, skeleton, snapshot)
 		_animation_driver.apply_hints(rig, snapshot)
 		_grapple_applicator.apply_grapple(rig, snapshot, _entity_nodes)
 

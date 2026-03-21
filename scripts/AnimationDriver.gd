@@ -14,6 +14,7 @@ const STATE_MAP := {
 	"prone": "Prone",
 	"unconscious": "KO",
 	"dead": "Dead",
+	"flee": "Run",
 }
 
 func apply_hints(rig: Node, snapshot: Dictionary) -> void:
@@ -21,9 +22,9 @@ func apply_hints(rig: Node, snapshot: Dictionary) -> void:
 		return
 	var animation: Dictionary = snapshot.get("animation", {})
 	var state := _resolve_state(animation)
-	var blend := clampf(float(animation.get("injuryWeight", 0.0)), 0.0, 1.0)
+	var blend := clampf(float(animation.get("injuryWeightQ", 0.0)) / 18000.0, 0.0, 1.0)
 	if animation.has("shockQ"):
-		blend = clampf(float(animation.get("shockQ", 0.0)) / 18000.0, 0.0, 1.0)
+		blend = max(blend, clampf(float(animation.get("shockQ", 0.0)) / 18000.0, 0.0, 1.0))
 
 	if rig.has_method("set_animation_state"):
 		rig.call("set_animation_state", state, blend, animation)

@@ -61,9 +61,18 @@ test("sidecar serves HTTP and websocket frames", async () => {
 
     const frameResponse = await fetch(`${BASE_URL}/frame`);
     assert.equal(frameResponse.status, 200);
-    const frame = await frameResponse.json() as { schema: string; entities: Array<{ position_m: { x: number } }> };
+    const frame = await frameResponse.json() as {
+      schema: string;
+      entities: Array<{
+        position_m: { x: number };
+        animation: { primaryState: string };
+        poseModifiers: Array<{ localOffset_m: { x: number; y: number; z: number } }>;
+      }>;
+    };
     assert.equal(frame.schema, "ananke.bridge.frame.v1");
     assert.equal(frame.entities.length, 2);
+    assert.equal(typeof frame.entities[0]?.animation.primaryState, "string");
+    assert.ok(Array.isArray(frame.entities[0]?.poseModifiers));
 
     const socket = new WebSocket(`ws://${HOST}:${PORT}/ws`);
     await once(socket, "open");
