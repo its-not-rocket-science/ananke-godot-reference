@@ -1,0 +1,22 @@
+{
+  "comment": "Maps Ananke humanoid body-plan segment IDs to AnankeCharacter display nodes",
+  "version": "1.0",
+  "bodyPlan": "humanoid_7seg",
+  "segments": {
+    "thorax":   { "displayNode": "Body",     "color_role": "torso" },
+    "abdomen":  { "displayNode": "Body",     "color_role": "torso" },
+    "pelvis":   { "displayNode": "Body",     "color_role": "torso" },
+    "head":     { "displayNode": "Head",     "color_role": "head"  },
+    "neck":     { "displayNode": "Head",     "color_role": "head"  },
+    "leftArm":  { "displayNode": "LeftArm",  "color_role": "limb"  },
+    "rightArm": { "displayNode": "RightArm", "color_role": "limb"  },
+    "leftLeg":  { "displayNode": "LeftLeg",  "color_role": "limb"  },
+    "rightLeg": { "displayNode": "RightLeg", "color_role": "limb"  }
+  },
+  "coordinateMapping": {
+    "ananke_x": "godot_x",
+    "ananke_y": "godot_z",
+    "ananke_z": "godot_y",
+    "note": "Ananke Y is lateral depth, Z is vertical. Godot Y is vertical, Z is depth."
+  }
+}

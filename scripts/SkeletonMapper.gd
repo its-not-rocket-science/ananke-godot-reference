@@ -115,7 +115,7 @@ func reset_pose(skeleton: Skeleton3D) -> void:
 func _derive_severity(modifier: Dictionary) -> float:
 	for key in ["impairmentQ", "shockQ", "weightQ", "gripQ"]:
 		if modifier.has(key):
-			return clampf(float(modifier.get(key, 0.0)) / 18000.0, 0.0, 1.0)
+			return clampf(float(modifier.get(key, 0.0)) / 10000.0, 0.0, 1.0)
 	return 0.0
 
 func _derive_offset(modifier: Dictionary, severity: float) -> Vector3:

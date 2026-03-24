@@ -26,7 +26,7 @@ func apply_grapple(rig: Node3D, snapshot: Dictionary, peers: Dictionary) -> void
 	var midpoint := holder.global_position.lerp(rig.global_position, 0.5)
 	rig.global_position = rig.global_position.lerp(midpoint, 0.15)
 	if rig.has_method("set_grapple_state"):
-		rig.call("set_grapple_state", true, holder_id, String(grapple.get("position", "standing")), clampf(float(grapple.get("gripQ", 0.0)) / 18000.0, 0.0, 1.0))
+		rig.call("set_grapple_state", true, holder_id, String(grapple.get("position", "standing")), clampf(float(grapple.get("gripQ", 0.0)) / 10000.0, 0.0, 1.0))
 
 func _clear_grapple(rig: Node) -> void:
 	if rig != null and rig.has_method("set_grapple_state"):
