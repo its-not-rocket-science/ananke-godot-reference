@@ -66,7 +66,7 @@ func resolve_bone_name(segment_id: String) -> String:
 	return String(_bone_names.get(segment_id, ""))
 
 func apply_snapshot(rig: Node3D, skeleton: Skeleton3D, snapshot: Dictionary) -> void:
-	if rig == null or skeleton == null:
+	if rig == null:
 		return
 
 	var position: Dictionary = snapshot.get("position_m", {})
@@ -84,6 +84,9 @@ func apply_snapshot(rig: Node3D, skeleton: Skeleton3D, snapshot: Dictionary) -> 
 	)
 	if facing_vec.length_squared() > 0.0001:
 		rig.look_at(rig.global_position + facing_vec.normalized(), Vector3.UP, true)
+
+	if skeleton == null:
+		return
 
 	var pose: Variant = snapshot.get("poseModifiers", [])
 	if typeof(pose) != TYPE_ARRAY:

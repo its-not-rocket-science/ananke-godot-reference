@@ -45,12 +45,17 @@ Alternative: use the `renderer-bridge.ts` WebSocket server in the ananke repo
 
 ---
 
-## M4 — GrapplePoseConstraint → FABRIK IK constraints
+## M4 — GrapplePoseConstraint → FABRIK IK constraints ✅ COMPLETE
 
-- When `grapple.isHeld = true`, apply a `SkeletonIK3D` or `XRBodyModifier3D` constraint locking the held entity's root to an attachment point on the holder.
-- `position` field (`"standing"`, `"prone"`, `"pinned"`) selects the IK target anchor.
-- `gripQ` (0–10000) drives a hand-close blend shape on the holder mesh.
-- Release IK constraint when `grapple.isHeld` becomes false.
+**Status:** Complete
+
+- `GrappleApplicator.gd` handles both grapple roles:
+  - **isHeld**: resolves the holder's `GrappleMarker` (or pose-specific `GrappleMarker/Standing` etc.) and converges the held entity's position toward it at `LERP_SPEED = 0.2` per frame.
+  - **isHolder**: calls `set_grapple_state(true, held_id, pose, grip)` on the holder rig to trigger grip visuals.
+- `CharacterRig.gd` `set_grapple_state` now tints the right arm gold proportional to `gripQ / SCALE.Q` — proxy for a hand-close blend shape until a real mesh is available.
+- `AnankeCharacter.gd` gains `get_skeleton()`, `set_animation_state()`, and `set_grapple_state()` so it can be driven by `AnankeController.gd` + `AnimationDriver.gd` + `GrappleApplicator.gd` via duck typing.
+- `SkeletonMapper.apply_snapshot` now applies root position even when `skeleton == null` (only bone poses are skipped), enabling `AnankeCharacter.gd` to work via the controller path.
+- When a real `Skeleton3D` rig is available, replace the position lerp with a `SkeletonIK3D` node targeting the holder's anchor. The `set_grapple_state` callback path remains unchanged.
 
 ---
 

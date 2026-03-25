@@ -148,6 +148,45 @@ func apply_snapshot(snap: Dictionary) -> void:
 	_is_held = grapple.get("isHeld", false)
 
 
+# ── AnankeController interface (duck-typed) ────────────────────────────────────
+# These three methods make AnankeCharacter compatible with AnankeController.gd +
+# AnimationDriver.gd + GrappleApplicator.gd without requiring CharacterRig.gd.
+
+## Returns null — procedural rig has no Skeleton3D; SkeletonMapper skips bone poses.
+func get_skeleton() -> Skeleton3D:
+	return null
+
+
+## Called by AnimationDriver.gd each tick.
+func set_animation_state(state_name: String, blend_amount: float, _animation: Dictionary) -> void:
+	var next_state: AnimState
+	match state_name:
+		"Dead":   next_state = AnimState.DEAD
+		"KO":     next_state = AnimState.UNCONSCIOUS
+		"Prone":  next_state = AnimState.PRONE
+		"Attack": next_state = AnimState.ATTACKING
+		"Guard":  next_state = AnimState.GUARDING
+		_:        next_state = AnimState.SHOCKED if blend_amount > 0.3 else AnimState.IDLE
+	if next_state != _anim_state:
+		_set_anim_state(next_state)
+
+
+## Called by GrappleApplicator.gd each tick.
+## Also drives _is_held so _process inhibits position lerp while constrained.
+func set_grapple_state(active: bool, _peer_id: int, pose_name: String, grip: float) -> void:
+	_is_held = active
+	if active:
+		if _right_arm_mat:
+			_right_arm_mat.albedo_color = _base_colour.lerp(Color(1.0, 0.65, 0.0), grip)
+		if _state_label:
+			_state_label.text     = "GRAPPLE[%s]" % pose_name
+			_state_label.modulate = Color(1.0, 0.70, 0.0)
+	else:
+		_restore_base_colours()
+		if _state_label:
+			_state_label.modulate = Color.WHITE
+
+
 # ── Godot lifecycle ────────────────────────────────────────────────────────────
 
 func _process(delta: float) -> void:

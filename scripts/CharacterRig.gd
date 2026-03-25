@@ -30,8 +30,15 @@ func set_animation_state(state_name: String, blend_amount: float, animation: Dic
 
 func set_grapple_state(active: bool, holder_id: int, pose_name: String, grip: float) -> void:
 	grapple_marker.visible = active
+	var right_arm_mat := _body_materials.get("RightArm") as StandardMaterial3D
 	if active:
-		state_label.text += "\ngrapple #%d %s %.2f" % [holder_id, pose_name, grip]
+		state_label.text += "\ngrapple #%d %s grip=%.2f" % [holder_id, pose_name, grip]
+		# Tint right arm gold proportional to grip strength — proxy for hand-close blend shape.
+		if right_arm_mat != null:
+			right_arm_mat.albedo_color = body_color.lerp(Color(1.0, 0.65, 0.0, 1.0), grip)
+	else:
+		if right_arm_mat != null:
+			right_arm_mat.albedo_color = body_color
 
 func _apply_body_color() -> void:
 	for node_name in ["Torso", "Head", "LeftArm", "RightArm", "LeftLeg", "RightLeg"]:
