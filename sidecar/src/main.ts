@@ -3,6 +3,7 @@ import http from "node:http";
 import type { Duplex } from "node:stream";
 import { performance } from "node:perf_hooks";
 import { extractRigSnapshots, q, stepWorld, type CommandMap } from "@its-not-rocket-science/ananke";
+import { loadWasmKernel, type WasmKernel } from "@its-not-rocket-science/ananke/wasm-kernel";
 import { createScenario, DEFAULT_HOST, DEFAULT_PORT, TICK_MS } from "./scenario.js";
 import { serialiseFrame, type WireFrame } from "./serialiser.js";
 
@@ -16,6 +17,13 @@ let latestFrame: WireFrame = bootFrame();
 let frameCount = 0;
 let intervalId: NodeJS.Timeout | null = null;
 const wsClients = new Set<Duplex>();
+let wasmKernel: WasmKernel | null = null;
+
+// Load WASM kernel in background — shadow-mode diagnostics only.
+const WASM_LOG_EVERY = 100; // log summary every N ticks
+loadWasmKernel().then(k => { wasmKernel = k; }).catch(err => {
+  process.stderr.write(`[wasm] kernel unavailable: ${err.message}\n`);
+});
 
 const server = http.createServer((req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -116,6 +124,11 @@ function stopLoop(): void {
 function tick(): void {
   const commands: CommandMap = scenario.buildCommands(scenario.world);
   stepWorld(scenario.world, commands, { tractionCoeff: q(1.0) });
+
+  if (wasmKernel && frameCount % WASM_LOG_EVERY === 0) {
+    const report = wasmKernel.shadowStep(scenario.world, scenario.world.tick);
+    process.stderr.write(report.summary + "\n");
+  }
 
   latestFrame = serialiseFrame({
     scenarioId: scenario.id,
