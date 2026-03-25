@@ -23,22 +23,25 @@ Alternative: use the `renderer-bridge.ts` WebSocket server in the ananke repo
 
 ---
 
-## M2 — Skeleton rig: segment IDs → Skeleton3D bones
+## M2 — Skeleton rig: segment IDs → Skeleton3D bones ✅ COMPLETE
 
-- Map `RigSnapshot.pose[].segmentId` values from `extractRigSnapshots` to `Skeleton3D` bone names using a JSON mapping file (`mappings/humanoid.json`).
-- Drive bone transforms from `MassDistribution.cogOffset_m` and canonical segment offsets.
-- Expose `BodyPlanMapping` loader in GDScript.
+**Status:** Complete
 
-Reference: `SegmentMapping` and `BodyPlanMapping` interfaces in `@its-not-rocket-science/ananke` bridge API.
+- `SkeletonMapper.gd` maps all nine canonical Ananke segment IDs to `Skeleton3D` bone names via `DEFAULT_MAP`; override per-rig by calling `load_mapping_from_json("res://mappings/humanoid.json")`.
+- `apply_snapshot` drives `set_bone_pose_position` and `set_bone_pose_rotation` per bone; `reset_pose` clears all bones each frame before re-applying.
+- `mappings/humanoid.json` documents the default segment → Godot bone name mapping with coordinate convention (`ananke_y → godot_z`).
+- Bone offset and rotation are derived procedurally from `impairmentQ` via `_derive_offset` / `_derive_rotation`.
 
 ---
 
-## M3 — AnimationPlayer state machine from AnimationHints
+## M3 — AnimationPlayer state machine from AnimationHints ✅ COMPLETE
 
-- Create an `AnimationTree` with a `AnimationNodeStateMachine` covering states: `Idle`, `Walk`, `Run`, `Sprint`, `Crawl`, `Guard`, `Attack`, `Prone`, `KO`, `Dead`.
-- Drive transitions from `AnimationHints` fields in the sidecar snapshot.
-- Blend weights (guardingQ, attackingQ, shockQ) map to `AnimationNodeBlend2` weights after dividing by `SCALE.Q` (10000).
-- Stagger / flinch overlay driven by `shockQ`.
+**Status:** Complete
+
+- `AnimationDriver.gd` resolves `primaryState` string to a state name via `STATE_MAP` (Idle / Walk / Run / Sprint / Crawl / Guard / Attack / Prone / KO / Dead).
+- Calls `rig.set_animation_state(state, blend, animation)` — implement this method on your character rig scene to wire an `AnimationTree` or `AnimationPlayer`.
+- `blend` = `max(injuryWeightQ, shockQ) / SCALE.Q` — use as the weight for a stagger additive track.
+- `AnankeCharacter.gd` provides a reference `set_animation_state` implementation using colour tinting as a placeholder until real clips are assigned.
 
 ---
 
