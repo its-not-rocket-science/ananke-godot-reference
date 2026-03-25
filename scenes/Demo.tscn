@@ -1,32 +1,66 @@
-[gd_scene load_steps=6 format=3 uid="uid://demo_scene_ananke_bridge"]
+[gd_scene load_steps=5 format=3 uid="uid://demo_scene_ananke"]
 
-[ext_resource type="Script" path="res://addons/ananke_bridge/AnankeDemo.cs" id="1_demo"]
-[ext_resource type="Script" path="res://addons/ananke_bridge/AnankeReceiver.cs" id="2_receiver"]
-[ext_resource type="Script" path="res://addons/ananke_bridge/AnankeInterpolator.cs" id="3_interpolator"]
-[ext_resource type="PackedScene" path="res://scenes/CharacterRig.tscn" id="4_character_rig"]
+[ext_resource type="Script" path="res://scripts/AnankeController.gd" id="1_controller"]
+[ext_resource type="PackedScene" path="res://scenes/GDSCharacterRig.tscn" id="2_character_rig"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+size = Vector2(6, 6)
 
 [node name="AnankeDemo" type="Node3D"]
-script = ExtResource("1_demo")
+script = ExtResource("1_controller")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 6, 0)
-light_energy = 1.1
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 5, 0)
+light_energy = 1.2
 shadow_enabled = true
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.906308, 0.422618, 0, -0.422618, 0.906308, 0, 2.4, 5.6)
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 2.4, 4.4)
 current = true
 
-[node name="AnankeReceiver" type="Node" parent="."]
-script = ExtResource("2_receiver")
+[node name="Entity1" parent="." instance=ExtResource("2_character_rig")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.4, 0, 0)
+body_color = Color(0.33, 0.56, 0.95, 1)
+metadata/entity_id = 1
 
-[node name="AnankeInterpolator" type="Node" parent="."]
-script = ExtResource("3_interpolator")
-
-[node name="Knight" parent="." instance=ExtResource("4_character_rig")]
-EntityId = 1
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0, 0)
-
-[node name="Brawler" parent="." instance=ExtResource("4_character_rig")]
-EntityId = 2
+[node name="Entity2" parent="." instance=ExtResource("2_character_rig")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0, 0)
+body_color = Color(0.92, 0.46, 0.27, 1)
+metadata/entity_id = 2
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_ground")
+transform = Transform3D(4, 0, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0)
+
+[node name="WaitingOverlay" type="CanvasLayer" parent="."]
+visible = true
+
+[node name="PanelContainer" type="PanelContainer" parent="WaitingOverlay"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -80.0
+offset_right = 220.0
+offset_bottom = 80.0
+
+[node name="MarginContainer" type="MarginContainer" parent="WaitingOverlay/PanelContainer"]
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="WaitingOverlay/PanelContainer/MarginContainer"]
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="StatusLabel" type="Label" parent="WaitingOverlay/PanelContainer/MarginContainer/VBoxContainer"]
+text = "Waiting for sidecar"
+horizontal_alignment = 1
+
+[node name="HintLabel" type="Label" parent="WaitingOverlay/PanelContainer/MarginContainer/VBoxContainer"]
+text = "Start the Node.js sidecar to stream frames into Godot."
+autowrap_mode = 3
+horizontal_alignment = 1
